@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bruce Highway Traffic Camera</title>
+    <meta http-equiv="refresh" content="60">
+</head>
+<body>
+    <h1>Bruce Highway – Live Traffic Camera</h1>
+
+    <img
+        src="{{ camera_url }}"
+        alt="Traffic camera"
+        style="max-width: 100%; height: auto;"
+    >
+
+    <p>Detected vehicles: {{ vehicle_count }}</p>
+
+    {% if traffic_high %}
+    <p style="color:red;"><strong>Traffic is higher than usual</strong></p>
+    {% else %}
+    <p style="color:green;">Traffic is normal</p>
+    {% endif %}
+</body>
+</html>
