@@ -6,8 +6,6 @@ import time
 _last_result = None
 _last_time = 0
 
-#test comment
-
 # This initializes the cloud-hosted model once
 model = get_model("yolov8n-640")
 
