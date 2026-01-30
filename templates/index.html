@@ -4,22 +4,91 @@
     <meta charset="UTF-8">
     <title>Bruce Highway Traffic Camera</title>
     <meta http-equiv="refresh" content="60">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .image-box {
+            flex: 1;
+            min-width: 400px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .image-box h2 {
+            margin-top: 0;
+            color: #555;
+            font-size: 1.2em;
+        }
+        .image-box img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .stats {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .stats p {
+            font-size: 1.1em;
+            margin: 10px 0;
+        }
+        .alert-high {
+            color: red;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+        .alert-normal {
+            color: green;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+    </style>
 </head>
 <body>
     <h1>Bruce Highway – Live Traffic Camera</h1>
 
-    <img
-        src="{{ camera_url }}"
-        alt="Traffic camera"
-        style="max-width: 100%; height: auto;"
-    >
+    <div class="container">
+        <div class="image-box">
+            <h2>Original Camera Feed</h2>
+            <img
+                src="{{ camera_url }}"
+                alt="Original traffic camera"
+            >
+        </div>
 
-    <p>Detected vehicles: {{ vehicle_count }}</p>
+        <div class="image-box">
+            <h2>Vehicle Detection (YOLO)</h2>
+            <img
+                src="/annotated_image?t={{ camera_url.split('=')[1] }}"
+                alt="Annotated traffic camera with bounding boxes"
+            >
+        </div>
+    </div>
 
-    {% if traffic_high %}
-    <p style="color:red;"><strong>Traffic is higher than usual</strong></p>
-    {% else %}
-    <p style="color:green;">Traffic is normal</p>
-    {% endif %}
+    <div class="stats">
+        <p><strong>Detected vehicles:</strong> {{ vehicle_count }}</p>
+
+        {% if traffic_high %}
+        <p class="alert-high">⚠️ Traffic is higher than usual</p>
+        {% else %}
+        <p class="alert-normal">✓ Traffic is normal</p>
+        {% endif %}
+    </div>
 </body>
 </html>
