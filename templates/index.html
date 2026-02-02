@@ -2,93 +2,222 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bruce Highway Traffic Camera</title>
+    <title>Queensland Traffic Monitor - Multi-Camera Dashboard</title>
     <meta http-equiv="refresh" content="60">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
             background-color: #f5f5f5;
         }
+        
         h1 {
             color: #333;
+            text-align: center;
+            margin-bottom: 30px;
         }
-        .container {
-            display: flex;
+        
+        .dashboard-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 20px;
-            flex-wrap: wrap;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        .image-box {
-            flex: 1;
-            min-width: 400px;
+        
+        .camera-card {
             background: white;
-            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        .image-box h2 {
-            margin-top: 0;
-            color: #555;
-            font-size: 1.2em;
+        
+        .camera-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: #333;
         }
-        .image-box img {
+        
+        .camera-content {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .image-section {
+            text-align: center;
+        }
+        
+        .image-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .image-section img {
             max-width: 100%;
             height: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
+            background-color: #000;
         }
-        .stats {
-            background: white;
+        
+        .image-section img.error {
+            display: none;
+        }
+        
+        .image-section .fallback-text {
+            color: #999;
+            font-style: italic;
             padding: 20px;
+            display: none;
+        }
+        
+        .image-section.error .fallback-text {
+            display: block;
+        }
+        
+        .stats-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .stat-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+        
+        .traffic-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status-high {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .status-normal {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status-loading {
+            background-color: #fff3e0;
+            color: #ef6c00;
+            border: 1px solid #ffcc02;
+        }
+        
+        .no-cameras {
+            text-align: center;
+            padding: 40px;
+            background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 20px;
         }
-        .stats p {
-            font-size: 1.1em;
-            margin: 10px 0;
-        }
-        .alert-high {
-            color: red;
-            font-weight: bold;
-            font-size: 1.3em;
-        }
-        .alert-normal {
-            color: green;
-            font-weight: bold;
-            font-size: 1.3em;
+        
+        @media (max-width: 768px) {
+            .camera-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .camera-card {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Bruce Highway – Live Traffic Camera</h1>
-
-    <div class="container">
-        <div class="image-box">
-            <h2>Original Camera Feed</h2>
-            <img
-                src="{{ camera_url }}"
-                alt="Original traffic camera"
-            >
-        </div>
-
-        <div class="image-box">
-            <h2>Vehicle Detection (YOLO)</h2>
-            <img
-                src="/annotated_image?t={{ camera_url.split('=')[1] }}"
-                alt="Annotated traffic camera with bounding boxes"
-            >
-        </div>
+    <h1>Queensland Traffic Monitor</h1>
+    <div class="dashboard-info">
+        Live traffic camera feeds with AI vehicle detection across Queensland
     </div>
 
-    <div class="stats">
-        <p><strong>Detected vehicles:</strong> {{ vehicle_count }}</p>
-
-        {% if traffic_high %}
-        <p class="alert-high">⚠️ Traffic is higher than usual</p>
-        {% else %}
-        <p class="alert-normal">✓ Traffic is normal</p>
-        {% endif %}
+    {% if cameras %}
+    <div class="camera-grid">
+        {% for camera in cameras %}
+        <div class="camera-card">
+            <div class="camera-header">
+                {{ camera.location }}
+            </div>
+            <div class="camera-content">
+                <div class="image-section">
+                    <h3>Original Feed</h3>
+                    <img 
+                        src="{{ camera.url }}?t={{ camera.timestamp }}"
+                        alt="Original traffic camera - {{ camera.location }}"
+                    >
+                </div>
+                
+                <div class="image-section">
+                    <h3>AI Detection</h3>
+                    <img 
+                        src="/annotated_image?camera_url={{ camera.url }}&t={{ camera.timestamp }}"
+                        alt="Annotated traffic camera with bounding boxes - {{ camera.location }}"
+                    >
+                </div>
+                
+                <div class="stats-section">
+                    <div class="stat-item">
+                        <div class="stat-label">Vehicles Detected</div>
+                        <div class="stat-value">{{ camera.vehicle_count }}</div>
+                    </div>
+                    
+                    <div class="traffic-status {% if camera.traffic_high %}status-high{% else %}status-normal{% endif %}">
+                        {% if camera.traffic_high %}
+                        ⚠️ Traffic is higher than usual
+                        {% else %}
+                        ✓ Traffic is normal
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <div class="no-cameras">
+        <h3>No cameras available</h3>
+        <p>Unable to load camera feeds from QLD Traffic API. Please try again later.</p>
+    </div>
+    {% endif %}
 </body>
 </html>

@@ -10,90 +10,90 @@ from io import BytesIO
 _last_result = None
 _last_time = 0
 
-# This initializes the cloud-hosted model once
+# Initialising once avoids repeated cold starts of the hosted model
 model = get_model("yolov8n-640")
 
 app = Flask(__name__)
 
-# Using a direct QLD Traffic camera image URL
-# This URL returns a refreshed image without changing the address
-CAMERA_URL = "https://cameras.qldtraffic.qld.gov.au/Gold_Coast/MRSCHD-293.jpg"
+def load_camera_urls():
+    # Pulling the camera list once avoids repeatedly hitting the public API
+    response = requests.get(
+        "https://api.qldtraffic.qld.gov.au/v1/webcams",
+        params = {"apikey": "3e83add325cbb69ac4d8e5bf433d770b"},
+        timeout = 10
+    )
+    response.raise_for_status()
+
+    data = response.json()
+
+    return [
+        feature["properties"]["image_url"]
+        for feature in data["features"]
+    ]
+
+# Loaded at startup so inference logic stays simple
+CAMERA_URLS = load_camera_urls()
+
+def pick_camera():
+    # Rotating feeds prevents biasing analysis to one location
+    index = int(time.time() / 60) % len(CAMERA_URLS)
+    return CAMERA_URLS[index]
 
 def analyse_traffic(camera_url):
     global _last_result, _last_time
     now = time.time()
 
-    # Only call model at most once per minute
+    # Limiting calls keeps cloud inference costs predictable
     if _last_result and now - _last_time < 60:
         return _last_result
 
-    try:
-        vehicles = detect_vehicles_from_url(camera_url)
-        vehicle_count = count_vehicles(vehicles)
-        traffic_high = is_traffic_high(vehicle_count)
+    vehicles = detect_vehicles_from_url(camera_url)
+    vehicle_count = count_vehicles(vehicles)
+    traffic_high = is_traffic_high(vehicle_count)
 
-        _last_result = (vehicle_count, traffic_high)
-        _last_time = now
-        print(f"Analysis complete: {vehicle_count} vehicles detected, traffic_high={traffic_high}")
-        return _last_result
-    except Exception as e:
-        print(f"Error analyzing traffic: {e}")
-        # Return last known result or default values
-        return _last_result if _last_result else (0, False)
+    _last_result = (vehicle_count, traffic_high)
+    _last_time = now
+    return _last_result
 
 def detect_vehicles_from_url(image_url):
-    # Download the image from the URL
     response = requests.get(image_url, timeout=10)
     response.raise_for_status()
-    
-    # Convert to PIL Image
+
     image = Image.open(BytesIO(response.content))
-    
-    # Convert PIL Image to numpy array (RGB format)
     image_array = np.array(image)
-    
-    # model.infer() can work with numpy arrays
+
     results = model.infer(image_array)
 
     vehicles = []
 
-    # Loop through each result in the list
     for result in results:
-        # Each result has a .predictions attribute
         for prediction in result.predictions:
-            # Only keep vehicle classes
             if prediction.class_name in ["car", "truck", "bus", "motorcycle"]:
                 vehicles.append(prediction)
-                print(f"Detected {prediction.class_name} at y={prediction.y:.1f} with confidence {prediction.confidence:.2f}")
 
-    print(f"Total vehicles detected: {len(vehicles)}")
     return vehicles
 
 def count_vehicles(vehicles, min_y=350):
-    # Only count objects that appear low enough in the frame
-    # Access the y attribute directly from prediction objects
-    count = sum(1 for vehicle in vehicles if vehicle.y > min_y)
-    print(f"Vehicles below y={min_y}: {count} out of {len(vehicles)}")
-    return count
+    # Filtering by vertical position reduces false positives far from the camera
+    return sum(1 for vehicle in vehicles if vehicle.y > min_y)
 
-AVERAGE_VEHICLES = 18  # adjust after observing real traffic
+AVERAGE_VEHICLES = 18
 
 def is_traffic_high(vehicle_count):
-    threshold = AVERAGE_VEHICLES * 1.3
-    print(f"Threshold: {threshold:.1f}, Current: {vehicle_count}")
-    return vehicle_count > threshold
+    # Relative thresholds adapt better than fixed numbers
+    return vehicle_count > AVERAGE_VEHICLES * 1.3
 
 @app.route("/")
 def index():
-    vehicle_count, traffic_high = analyse_traffic(CAMERA_URL)
+    camera_url = pick_camera()
+    vehicle_count, traffic_high = analyse_traffic(camera_url)
 
     return render_template(
         "index.html",
-        camera_url=f"{CAMERA_URL}?t={int(time.time())}",
+        camera_url=f"{camera_url}?t={int(time.time())}",
         vehicle_count=vehicle_count,
         traffic_high=traffic_high
     )
 
 if __name__ == "__main__":
-    # Debug is enabled to make iteration faster during development
     app.run(debug=True)
