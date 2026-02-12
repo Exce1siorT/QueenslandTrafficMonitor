@@ -53,7 +53,7 @@
         .camera-content {
             padding: 15px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 15px;
         }
         
@@ -180,18 +180,10 @@
             </div>
             <div class="camera-content">
                 <div class="image-section">
-                    <h3>Original Feed</h3>
+                    <h3>Traffic Camera</h3>
                     <img 
                         src="{{ camera.url }}?t={{ camera.timestamp }}"
-                        alt="Original traffic camera - {{ camera.location }}"
-                    >
-                </div>
-                
-                <div class="image-section">
-                    <h3>AI Detection</h3>
-                    <img 
-                        src="/annotated_image?camera_url={{ camera.url }}&t={{ camera.timestamp }}"
-                        alt="Annotated traffic camera with bounding boxes - {{ camera.location }}"
+                        alt="Traffic camera - {{ camera.location }}"
                     >
                 </div>
                 
