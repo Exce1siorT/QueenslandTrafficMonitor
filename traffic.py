@@ -5,11 +5,14 @@ import requests
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+from apikey import api_key as open_router_api_key
 import cv2
 import threading
 from collections import defaultdict
 import re
 import os
+
+#pip install flask, openai, requests, numpy, Pillow, opencv-python
 
 # cache to protect free tier credits
 camera_cache = {}
@@ -68,8 +71,8 @@ def extract_location_from_url(image_url):
 
 # Initialize OpenAI client for molmo8b
 client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key="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",
+    base_url = "https://openrouter.ai/api/v1",
+    api_key = open_router_api_key
 )
 
 AVERAGE_VEHICLES = 5  # Lowered for testing - adjust after observing real traffic
@@ -132,7 +135,11 @@ def load_camera_urls():
 
 
 def analyse_traffic(camera_url):
-    """Analyze traffic for a single camera with caching"""
+    """
+    Analyze traffic for a single camera with caching
+    
+    
+    """
     now = time.time()
     cache_key = camera_url
     
@@ -390,6 +397,12 @@ def create_vehicle_objects(vehicles_data):
     return vehicles
 
 def count_vehicles(vehicles, min_y = 0):
+    """
+    Docstring for count_vehicles
+    
+    :param vehicles: Description
+    :param min_y: Description
+    """
     # Count all detected vehicles
     count = sum(1 for vehicle in vehicles if vehicle.y > min_y)
     #print(f"Vehicles counted: {count} out of {len(vehicles)}")
@@ -397,6 +410,11 @@ def count_vehicles(vehicles, min_y = 0):
 
 
 def is_traffic_high(vehicle_count):
+    """
+    Docstring for is_traffic_high
+    
+    :param vehicle_count: Description
+    """
     threshold = AVERAGE_VEHICLES * 1.3
     #print(f"Threshold: {threshold:.1f}, Current: {vehicle_count}")
     return vehicle_count > threshold
